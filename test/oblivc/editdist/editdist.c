@@ -41,7 +41,16 @@ int main(int argc,char *argv[])
   currentParty = (remote_host?2:1);
   setCurrentParty(&pd,currentParty);
   lap = wallClock();
-  execYaoProtocol(&pd,editDistance,&io);
+  setupYaoProtocol(&pd, true);
+  //cleanupProtocol(&pd);
+  for(int i=0; i<10; i++){
+      //ocTestUtilTcpOrDie(&pd, remote_host, argv[1]);
+      mainYaoProtocol(&pd, true, editDistance, &io);
+      //cleanupProtocol(&pd);
+  }
+  // mainYaoProtocol(&pd, true, editDistance, &io);
+  cleanupYaoProtocol(&pd);
+  // execYaoProtocol(&pd,editDistance,&io);
   fprintf(stderr,"%s total time: %lf s\n",mySide(),wallClock()-lap);
   cleanupProtocol(&pd);
   fprintf(stderr,"Result: %d\n",io.res);
