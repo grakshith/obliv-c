@@ -18,9 +18,11 @@ void protocolAddSizeCheck(ProtocolDesc* pd);
 // The old sockCount parameter (was the last param) is no longer used.
 int protocolConnectTcp2P(ProtocolDesc* pd,const char* server,const char* port);
 int protocolAcceptTcp2P(ProtocolDesc* pd,const char* port);
+
 int protocolConnectTcp2PProfiled(ProtocolDesc* pd,const char* server,const char* port);
 int protocolAcceptTcp2PProfiled(ProtocolDesc* pd,const char* port);
 void cleanupProtocol(ProtocolDesc*);
+
 
 void setCurrentParty(ProtocolDesc* pd, int party);
 void execDebugProtocol(ProtocolDesc* pd, protocol_run start, void* arg);
@@ -36,5 +38,13 @@ void execNnobProtocol(ProtocolDesc* pd, protocol_run start, void* arg, int numOT
 
 size_t tcp2PBytesSent(ProtocolDesc* pd);
 size_t tcp2PFlushCount(ProtocolDesc* pd);
+
+extern void setupYaoProtocol(ProtocolDesc* pd, bool halfgates);
+extern void mainYaoProtocol(ProtocolDesc* pd, bool point_and_permute, protocol_run start, void* arg);
+extern void cleanupYaoProtocol(ProtocolDesc * pd);
+
+// basically just cleans up the TCP connection. Should really be called
+// cleanupProtocolConn
+void cleanupProtocol(ProtocolDesc*);
 
 #endif // OBLIV_H

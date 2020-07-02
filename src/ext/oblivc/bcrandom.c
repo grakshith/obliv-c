@@ -104,3 +104,22 @@ void bcRandomPermutation(BCipherRandomGen* gen,unsigned arr[],size_t n)
   bcRandomShuffle(gen,arr,n);
 }
 
+void printBCipherRandomGen(BCipherRandomGen* bc)
+{
+    unsigned i;
+    fprintf(stderr, "data in zeros is: ");
+    for (i = 0; i < BC_MAXBLEN; ++i) {
+        fprintf(stderr, "%x ", bc->zeroes[i] & 0xff);
+    }
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "data in ctr is: ");
+    for (i = 0; i < BC_MAXBLEN; ++i) {
+        fprintf(stderr, "%x ", bc->ctr[i] & 0xff);
+    }
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "block length is %lu\n", bc->blen);
+    fprintf(stderr, "key length is %lu\n", bc->klen);
+    fprintf(stderr, "algo is %d\n", bc->algo);
+}

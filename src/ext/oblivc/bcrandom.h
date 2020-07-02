@@ -1,5 +1,6 @@
 #pragma once
 #include<gcrypt.h>
+#include<stdio.h>
 
 // XXX I feel like obliv_common.h doesn't belong here
 #include<obliv_common.h>
@@ -34,5 +35,10 @@ unsigned long long bcRandomInt(BCipherRandomGen* gen,unsigned long long max);
 void bcRandomShuffle(BCipherRandomGen* gen,unsigned arr[],size_t n);
 void bcRandomPermutation(BCipherRandomGen* gen,unsigned arr[],size_t n);
 
+
 // Weird function being used externally
 void setctrFromIntBCipherRandomGen(BCipherRandomGen* gen,uint64_t ctr);
+
+// following functions to support caching/reuse of gcry_cipher_hd_t
+void printBCipherRandomGen();
+

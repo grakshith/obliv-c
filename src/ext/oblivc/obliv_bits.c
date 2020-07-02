@@ -1070,9 +1070,46 @@ void splitYaoProtocolExtra(ProtocolDesc* pdout, ProtocolDesc * pdin) {
   oflush(pdin); oflush(pdout);
 }
 
+void setupBaseOT(ProtocolDesc * pd) {
+  YaoProtocolDesc* ypd = pd->extra;
+  int me = pd->thisParty;
+  ypd->gcount = ypd->gcount_offset = ypd->icount = ypd->ocount = 0;
+  if (me==1) {
+    gcry_randomize(ypd->R,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
+    gcry_randomize(ypd->I,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
+    if(true) ypd->R[0] |= 1;   // flipper bit
+
+    if(ypd->sender.sender==NULL)
+    { 
+      ypd->sender = honestOTExtSenderAbstract(honestOTExtSenderNew(pd,2));
+    }
+  } else 
+    if(ypd->recver.recver==NULL)
+    { 
+      ypd->recver = honestOTExtRecverAbstract(honestOTExtRecverNew(pd,1));
+    }
+}
+
+void cleanupBaseOT(ProtocolDesc * pd) 
+{
+  // cleanup OT
+  YaoProtocolDesc* ypd = pd->extra;
+  int me = pd->thisParty;
+  if(me==1) {
+    otSenderRelease(&ypd->sender);
+  } else {
+    otRecverRelease(&ypd->recver);
+  }
+
+  // some other cleanup
+  // gcry_cipher_close(ypd->fixedKeyCipher);
+  // free(ypd);
+}
+
+
 /* execYaoProtocol is divided into 2 parts which are reused by other
    protocols such as DualEx */
-void setupYaoProtocol(ProtocolDesc* pd,bool halfgates)
+void setupYaoProtocol(ProtocolDesc* pd, bool halfgates)
 {
   YaoProtocolDesc* ypd = malloc(sizeof(YaoProtocolDesc));
   int me = pd->thisParty;
@@ -1104,13 +1141,28 @@ void setupYaoProtocol(ProtocolDesc* pd,bool halfgates)
 
   pd->splitextra = splitYaoProtocolExtra;
   pd->cleanextra = cleanupYaoProtocol;
+
+  if (true) {
+    setupBaseOT(pd);
+  }
+
 }
+
 
 // point_and_permute should always be true.
 // It is false only in the NP protocol, where evaluator knows everything
 void mainYaoProtocol(ProtocolDesc* pd, bool point_and_permute,
                      protocol_run start, void* arg)
 {
+
+
+  // double start_wall = get_wall_time();
+  // double start_cpu = get_cpu_time();
+  if (false) {
+    setupBaseOT(pd);
+  }
+  /*
+
   YaoProtocolDesc* ypd = pd->extra;
   int me = pd->thisParty;
   ypd->ownOT=false;
@@ -1130,13 +1182,37 @@ void mainYaoProtocol(ProtocolDesc* pd, bool point_and_permute,
     { ypd->ownOT=true;
       ypd->recver = honestOTExtRecverAbstract(honestOTExtRecverNew(pd,1));
     }
+  */
+
+  // double end_wall = get_wall_time();
+  // double end_cpu = get_cpu_time();
+  // fprintf(stderr, "wall %lf cpu %lf\n", end_wall-start_wall, end_cpu-start_cpu);
 
   currentProto = pd;
   start(arg);
+
+
+  if(false)
+  { 
+    cleanupBaseOT(pd);
+    /*
+    if(me==1) otSenderRelease(&ypd->sender);
+    else otRecverRelease(&ypd->recver);
+    */
+  }
+
 }
 
 void cleanupYaoProtocol(ProtocolDesc* pd)
 {
+  if(false)
+  { 
+    cleanupBaseOT(pd);
+    /*
+    if(me==1) otSenderRelease(&ypd->sender);
+    else otRecverRelease(&ypd->recver);
+    */
+  }
   YaoProtocolDesc* ypd = pd->extra;
   gcry_cipher_close(ypd->fixedKeyCipher);
   yaoReleaseOt(pd, pd->thisParty);
@@ -1157,6 +1233,70 @@ void execYaoProtocol_noHalf(ProtocolDesc* pd, protocol_run start, void* arg)
   mainYaoProtocol(pd,true,start,arg);
   cleanupYaoProtocol(pd);
 }
+
+/*
+// following functions help to reuse/cache baseOT
+// point_and_permute should always be true.
+// It is false only in the NP protocol, where evaluator knows everything
+void setupBaseOTYaoProtocol(ProtocolDesc* pd, bool point_and_permute,
+                            bool halfgates)
+{
+  // setup ProtocolDesc
+  YaoProtocolDesc* ypd = malloc(sizeof(YaoProtocolDesc));
+  int me = pd->thisParty;
+  pd->extra = ypd;
+  pd->error = 0;
+  ypd->protoType = OC_PD_TYPE_YAO;
+  ypd->extra = NULL;
+  pd->partyCount = 2;
+  pd->currentParty = ocCurrentPartyDefault;
+  pd->feedOblivInputs = (me==1?yaoGenrFeedOblivInputs:yaoEvalFeedOblivInputs);
+  pd->revealOblivBits = (me==1?yaoGenrRevealOblivBits:yaoEvalRevealOblivBits);
+  if(halfgates)
+  { pd->setBitAnd = (me==1?yaoGenerateAndPair:yaoEvaluateHalfGatePair);
+    pd->setBitOr  = (me==1?yaoGenerateOrPair :yaoEvaluateHalfGatePair);
+  }else
+  { ypd->nonFreeGate = (me==1?yaoGenerateGate:yaoEvaluateGate);
+    pd->setBitAnd = yaoSetBitAnd;
+    pd->setBitOr  = yaoSetBitOr;
+  }
+  pd->setBitXor = yaoSetBitXor;
+  pd->setBitNot = yaoSetBitNot;
+  pd->flipBit   = yaoFlipBit;
+
+  if(pd->thisParty==1) ypd->sender.sender=NULL;
+  else ypd->recver.recver=NULL;
+
+  dhRandomInit();
+  gcry_cipher_open(&ypd->fixedKeyCipher,yaoFixedKeyAlgo,GCRY_CIPHER_MODE_ECB,0);
+  gcry_cipher_setkey(ypd->fixedKeyCipher,yaoFixedKey,sizeof(yaoFixedKey)-1);
+
+  ypd->gcount = ypd->icount = ypd->ocount = 0;
+
+  // Do base OT
+  if (me==1) {
+    gcry_randomize(ypd->R,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
+    gcry_randomize(ypd->I,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
+    if(point_and_permute) ypd->R[0] |= 1;   // flipper bit
+
+    if(ypd->sender.sender==NULL)
+    { 
+      ypd->sender = honestOTExtSenderAbstract(honestOTExtSenderNew(pd,2));
+    }
+  } else 
+    if(ypd->recver.recver==NULL)
+    { 
+      ypd->recver = honestOTExtRecverAbstract(honestOTExtRecverNew(pd,1));
+    }
+}
+
+void mainYaoProtocolNoBaseOT(ProtocolDesc* pd, protocol_run start, void* arg)
+{
+  currentProto = pd;
+  start(arg);
+}
+*/
+
 
 // Special purpose gates, meant to be used if you like doing low-level
 // optimizations. Note: this one assumes constant propagation has already
