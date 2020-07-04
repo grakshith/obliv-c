@@ -1074,6 +1074,7 @@ void setupBaseOT(ProtocolDesc * pd) {
   YaoProtocolDesc* ypd = pd->extra;
   int me = pd->thisParty;
   ypd->gcount = ypd->gcount_offset = ypd->icount = ypd->ocount = 0;
+  ypd->ownOT = false;
   if (me==1) {
     gcry_randomize(ypd->R,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
     gcry_randomize(ypd->I,YAO_KEY_BYTES,GCRY_STRONG_RANDOM);
@@ -1081,11 +1082,13 @@ void setupBaseOT(ProtocolDesc * pd) {
 
     if(ypd->sender.sender==NULL)
     { 
+      ypd->ownOT = true;
       ypd->sender = honestOTExtSenderAbstract(honestOTExtSenderNew(pd,2));
     }
   } else 
     if(ypd->recver.recver==NULL)
     { 
+      ypd->ownOT = true;
       ypd->recver = honestOTExtRecverAbstract(honestOTExtRecverNew(pd,1));
     }
 }
