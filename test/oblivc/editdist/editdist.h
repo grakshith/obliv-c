@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAXN 200
+#define MAXN 1500
 
 typedef struct protocolIO
 { const char* s;
