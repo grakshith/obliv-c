@@ -1093,6 +1093,11 @@ void setupBaseOT(ProtocolDesc * pd) {
     }
 }
 
+void clearYaoGateCount(ProtocolDesc *pd){
+  YaoProtocolDesc *ypd = pd->extra;
+  ypd->gcount = ypd->gcount_offset = ypd->icount = ypd->ocount = 0;
+}
+
 void cleanupBaseOT(ProtocolDesc * pd) 
 {
   // cleanup OT

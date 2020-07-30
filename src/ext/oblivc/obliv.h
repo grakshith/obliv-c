@@ -42,6 +42,7 @@ size_t tcp2PFlushCount(ProtocolDesc* pd);
 extern void setupYaoProtocol(ProtocolDesc* pd, bool halfgates);
 extern void mainYaoProtocol(ProtocolDesc* pd, bool point_and_permute, protocol_run start, void* arg);
 extern void cleanupYaoProtocol(ProtocolDesc * pd);
+extern void clearYaoGateCount(ProtocolDesc *pd);
 
 // basically just cleans up the TCP connection. Should really be called
 // cleanupProtocolConn
